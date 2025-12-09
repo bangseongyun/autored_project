@@ -4,13 +4,13 @@ import math
 from gpiozero import Servo
 from gpiozero import Motor
 
-# 1. 하드웨어 설정
+#1. 하드웨어 설정
 
 servo = Servo(12)
 motor = Motor(forward=13, backward=19)
 
 
-# 2. 카메라 및 변수 설정
+#2. 카메라 및 변수 설정
 
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -41,13 +41,13 @@ while cap.isOpened():
         motor.stop()
         break
     
-    # 3. 이미지 전처리
+    #3. 이미지 전처리
 
     frame = cv2.resize(frame, (720, 480))
     height, width = frame.shape[:2]
     CENTER_X = width // 2  # 320
     
-    # [유지] ROI 시작점: 0.65 
+    #ROI 시작점: 0.65 
     roi_y_start = int(height * 0.65) 
     roi_y_end = height 
     roi = frame[roi_y_start:roi_y_end, 0:width]
@@ -60,7 +60,7 @@ while cap.isOpened():
     blur = cv2.GaussianBlur(roi_gray, (5, 5), 0)
     
     edges = cv2.Canny(blur, 50, 150)
-    # [유지] HoughLinesP Threshold 극대화: 15
+    #HoughLinesP Threshold 극대화: 15
     lines = cv2.HoughLinesP(edges, 
                             rho=1, 
                             theta=np.pi/180, 
@@ -68,7 +68,7 @@ while cap.isOpened():
                             minLineLength=3, 
                             maxLineGap=20)
     
-    # 4. 차선 구분 및 좌표 계산 
+    #4. 차선 구분 및 좌표 계산 
     l_m, r_m = [], []
     l_b, r_b = [], []
     
@@ -84,7 +84,7 @@ while cap.isOpened():
             y_b = y1 - m * x1 
             mid_x = (x1 + x2) / 2
             
-            # [유지] 차선 기울기 조건 강화: +/- 0.1
+            #차선 기울기 조건 강화: +/- 0.1
             if m > 0.1 and mid_x > RIGHT_LANE_X_MIN:
                 r_m.append(m); r_b.append(y_b)
             elif m < -0.1 and mid_x < LEFT_LANE_X_MAX:
@@ -113,26 +113,24 @@ while cap.isOpened():
             x_end_vis = int((y_end_roi - avg_y_b) / avg_m)
             cv2.line(line_draw, (l_cross, y_line_roi), (x_end_vis, y_end_roi), (0, 255, 0), 3)
 
-    # ------------------------------------------------
+
     # 5. 최종 조향 결정 로직 (강제 직진 모드 유지)
-    # ------------------------------------------------
-    
     P_term = 0.0
     lines_detected_both = (r_cross != 0 and l_cross != 0)
     
     if lines_detected_both:
-        # 🌟 직선 주행 - 강제 직진 모드! (오직 STEERING_OFFSET 0.18만 반영됨)
+        #직선 주행 - 강제 직진 모드(오직 STEERING_OFFSET 0.18만 반영됨)
         P_term = 0.0 
         MAX_STEERING_TEMP = MAX_STEERING_STRAIGHT
         
     elif l_cross != 0:
-        # 🌟 곡선 주행: 왼쪽 차선 추종 (Gain 0.6 유지)
+        #곡선 주행: 왼쪽 차선 추종 (Gain 0.5 유지)
         current_error = -lx
         P_term = current_error * 0.5
         MAX_STEERING_TEMP = MAX_STEERING
         
     elif r_cross != 0:
-        # 🌟 곡선 주행: 오른쪽 차선 추종 (Gain 0.8 유지)
+        #곡선 주행: 오른쪽 차선 추종 (Gain 0.7 유지)
         current_error = -rx
         P_term = current_error * 0.7
         MAX_STEERING_TEMP = MAX_STEERING
@@ -164,12 +162,12 @@ while cap.isOpened():
 
     if -1.0 <= steering <= 1.0:
         servo.value = steering
-        # [유지] 모터 속도: 0.6
+        #모터 속도: 0.6
         motor.forward(0.6)
         
         last_steering = steering
         
-        # 직진 상태 근처일 때 last_steering 초기화 (오프셋 0.18에 맞춰서 조건 0.15 유지)
+        #직진 상태 근처일 때 last_steering 초기화 (오프셋 0.18에 맞춰서 조건 0.15 유지)
         if abs(steering - STEERING_OFFSET) < 0.15:
             last_steering = STEERING_OFFSET
 
@@ -177,13 +175,11 @@ while cap.isOpened():
         motor.stop()
         print("Steering Error")
 
-    # ------------------------------------------------
     # 7. 화면 출력 (디버깅)
-    # ------------------------------------------------
-    # 강제 직진 모드일 때는 타겟 X 위치가 320 (정중앙)이 됩니다.
+    #강제 직진 모드일 때는 타겟 X 위치가 320 (정중앙)이 됨
     target_x = 320
     if l_cross != 0 and r_cross != 0: 
-        # 강제 직진 모드: 목표를 중앙으로 표시
+        #강제 직진 모드: 목표를 중앙으로 표시
         target_x = CENTER_X 
     elif l_cross != 0: 
         target_x = l_cross + int(width * 0.3) 
