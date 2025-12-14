@@ -143,16 +143,13 @@ while cap.isOpened():
     unoffseted_steering = P_term
     final_steering = unoffseted_steering 
         
-    # [핵심] 직선 쏠림 보정 적용 (0.18)
+    #직선 쏠림 보정 적용 (0.18)
     final_steering += STEERING_OFFSET
         
     # EMA Smoothing 적용 (직전 조향값 영향력 85%로 극대화)
     final_steering = (final_steering * STEERING_SMOOTHING_ALPHA) + \
                      (last_steering * (1 - STEERING_SMOOTHING_ALPHA))
-        
-    # ------------------------------------------------
-    # 6. 모터 제어 실행 
-    # ------------------------------------------------
+
     
     # 조향값 제한 
     if abs(final_steering) > MAX_STEERING_TEMP:
@@ -175,7 +172,7 @@ while cap.isOpened():
         motor.stop()
         print("Steering Error")
 
-    # 7. 화면 출력 (디버깅)
+    #화면 출력 (디버깅)
     #강제 직진 모드일 때는 타겟 X 위치가 320 (정중앙)이 됨
     target_x = 320
     if l_cross != 0 and r_cross != 0: 
