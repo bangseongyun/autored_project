@@ -4,13 +4,13 @@ import math
 from gpiozero import Servo
 from gpiozero import Motor
 
-#1. 하드웨어 설정
+#하드웨어 설정
 
 servo = Servo(12)
 motor = Motor(forward=13, backward=19)
 
 
-#2. 카메라 및 변수 설정
+#카메라 및 변수 설정
 
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -32,7 +32,6 @@ STEERING_SMOOTHING_ALPHA = 0.15
 #P_GAIN_STRAIGHT 최대치 적용: 0.60 
 P_GAIN_STRAIGHT = 0.60
 
-print("System Ready. Start Driving...")
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -41,7 +40,7 @@ while cap.isOpened():
         motor.stop()
         break
     
-    #3. 이미지 전처리
+    #이미지 전처리
 
     frame = cv2.resize(frame, (720, 480))
     height, width = frame.shape[:2]
@@ -68,7 +67,7 @@ while cap.isOpened():
                             minLineLength=3, 
                             maxLineGap=20)
     
-    #4. 차선 구분 및 좌표 계산 
+    #차선 구분 및 좌표 계산 
     l_m, r_m = [], []
     l_b, r_b = [], []
     
@@ -114,7 +113,7 @@ while cap.isOpened():
             cv2.line(line_draw, (l_cross, y_line_roi), (x_end_vis, y_end_roi), (0, 255, 0), 3)
 
 
-    # 5. 최종 조향 결정 로직 (강제 직진 모드 유지)
+    #최종 조향 결정 로직 (강제 직진 모드 유지)
     P_term = 0.0
     lines_detected_both = (r_cross != 0 and l_cross != 0)
     
@@ -136,7 +135,7 @@ while cap.isOpened():
         MAX_STEERING_TEMP = MAX_STEERING
         
     else:
-        # 차선 미감지 시: 직전 조향값 유지 (오프셋 제외된 값)
+        #차선 미감지 시: 직전 조향값 유지 (오프셋 제외된 값)
         P_term = last_steering - STEERING_OFFSET
         MAX_STEERING_TEMP = MAX_STEERING
         
@@ -151,7 +150,7 @@ while cap.isOpened():
                      (last_steering * (1 - STEERING_SMOOTHING_ALPHA))
 
     
-    # 조향값 제한 
+    #조향값 제한 
     if abs(final_steering) > MAX_STEERING_TEMP:
         steering = math.copysign(MAX_STEERING_TEMP, final_steering)
     else:
